@@ -1,0 +1,33 @@
+{
+  "name": "transfer-family-sftp-ontap",
+  "version": "1.0.0",
+  "description": "AWS Transfer Family SFTP with Active Directory authentication, writing straight onto an Amazon FSx for NetApp ONTAP (SMB/NTFS) volume through an S3 access point, with no data copying.",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
+    "test": "jest",
+    "synth": "cdk synth",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all"
+  },
+  "devDependencies": {
+    "@types/jest": "30.0.0",
+    "@types/node": "20.14.9",
+    "aws-cdk": "2.1146.0",
+    "jest": "30.5.2",
+    "ts-jest": "29.4.15",
+    "ts-node": "10.9.2",
+    "typescript": "5.5.4"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.274.0",
+    "cdk-nag": "3.0.2",
+    "constructs": "10.8.1",
+    "source-map-support": "0.5.21"
+  },
+  "license": "MIT-0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

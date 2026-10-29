@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/awslabs/automated-security-helper/refs/heads/main/automated_security_helper/schemas/AshConfig.json
+# Automated Security Helper (ASH) v3 configuration. Run scripts/ash-scan.sh,
+# which scans the repository AND the synthesized CloudFormation templates.
+# Every suppression below names the rule, the files and the reason.
+project_name: transfer-family-sftp-ontap
+fail_on_findings: true
+global_settings:
+  severity_threshold: MEDIUM
+  ignore_paths:
+    - path: 'cdk.out*/**'
+      reason: Local synth output; scripts/ash-scan.sh scans freshly synthesized templates in a separate pass.
+    - path: '.ash/ash_output/**'
+      reason: ASH's own output.
+  suppressions:
+    # --- Dependencies (repository scan) ---
+    - rule_id: GHSA-hp3w-g68c-fv3c
+      path: '**/sprintf-js/package.json'
+      reason: >-
+        Dev-only: ts-jest > @jest/transform > babel-plugin-istanbul > js-yaml@3 > argparse > sprintf-js.
+        No patched sprintf-js exists. Used only for local test coverage, never deployed, and never given
+        untrusted format strings.
+      expiration: '2027-04-30'
+    - rule_id: npm-audit-transitive-*
+      path: '**/package.json'
+      reason: >-
+        Transitive entries for the same dev-only sprintf-js advisory (GHSA-hp3w-g68c-fv3c) through the
+        jest toolchain. Not part of any deployed artifact.
+      expiration: '2027-04-30'
+
+    # --- Synthesized templates (cdk.out scan) ---
+    - rule_id: SECRET-BASE64-HIGH-ENTROPY-STRING
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: CDK-generated logical IDs with hash suffixes; the templates contain no secret values.
+    - rule_id: SECRET-HEX-HIGH-ENTROPY-STRING
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: SHA-256 hashes of the bootstrap scripts and self-test code, used to trigger re-runs.
+    - rule_id: CKV_AWS_115
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        Custom-resource and provider-framework functions invoked only by CloudFormation during deploys,
+        plus the on-demand self-test; reserved concurrency would add nothing.
+    - rule_id: CKV_AWS_116
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        Functions are invoked synchronously (CloudFormation custom resources, direct self-test
+        invocation); a dead-letter queue only applies to asynchronous invocations.
+    - rule_id: CKV_AWS_117
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        Functions only call AWS APIs (SSM, Transfer, S3 access point via IAM); none needs VPC network
+        access. Host-side work runs on the private instances through SSM.
+    - rule_id: CKV_AWS_173
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: Environment variables hold resource names and ARNs only; secrets are read from Secrets Manager at run time.
+    - rule_id: CKV_AWS_149
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        Secrets use the AWS managed key for Secrets Manager. Access is limited per host by IAM; a customer
+        managed key is a documented production hardening step (README, Security).
+    - rule_id: CKV_AWS_158
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: Log groups use CloudWatch Logs default encryption; a customer managed key is a documented production hardening step.
+    - rule_id: CKV_AWS_35
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: The audit trail bucket uses SSE-S3, enforces TLS, blocks public access and is versioned; SSE-KMS is a documented production hardening step.
+    - rule_id: CKV_AWS_67
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        This trail deliberately records only S3 data events for the demo access point in the deployment
+        region; account-wide multi-Region trails are an organization concern.
+    - rule_id: CKV_AWS_18
+      path: '**/sftp-ontap-demo-*.template.json'
+      reason: >-
+        The only bucket is the CloudTrail audit bucket itself; logging its own access to another bucket is
+        out of scope for the demo (also acknowledged as AwsSolutions-S1 in lib/nag.ts).
